@@ -22,12 +22,12 @@ instance_groups:
   networks: [{name: private}]
   stemcell: trusty
   vm_type: default
-  vm_extensions:
-  - lb
   jobs:
   - release: concourse
     name: atc
     properties:
+      log_level: debug
+      token_signing_key: ((token_signing_key))
       external_url: "((external_url))"
       basic_auth_username: "((basic_auth_username))"
       basic_auth_password: "((basic_auth_password))"
@@ -35,7 +35,11 @@ instance_groups:
       bind_port: 80
   - release: concourse
     name: tsa
-    properties: {}
+    properties:
+      log_level: debug
+      host_key: ((tsa_host_key))
+      token_signing_key: ((token_signing_key))
+      authorized_keys: [((worker_key.public_key))]
 
 - name: db
   instances: 1
@@ -92,6 +96,12 @@ variables:
   type: password
 - name: database_password
   type: password
+- name: token_signing_key
+  type: rsa
+- name: tsa_host_key
+  type: ssh
+- name: worker_key
+  type: ssh
 
 stemcells:
 - alias: trusty
