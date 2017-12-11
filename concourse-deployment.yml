@@ -71,7 +71,7 @@ instance_groups:
     consumes: {baggageclaim: {from: worker-baggageclaim}}
     properties:
       drain_timeout: "10m"
-      tsa: "{worker_key: ((worker_key))}"
+      tsa: {worker_key: ((worker_key))}
 
   - release: concourse
     name: baggageclaim
