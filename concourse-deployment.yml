@@ -26,8 +26,8 @@ instance_groups:
   - release: concourse
     name: atc
     properties:
-      log_level: debug
-      token_signing_key: ((token_signing_key))
+      log_level: "debug"
+      token_signing_key: "((token_signing_key))"
       external_url: "((external_url))"
       basic_auth_username: "((basic_auth_username))"
       basic_auth_password: "((basic_auth_password))"
@@ -36,10 +36,10 @@ instance_groups:
   - release: concourse
     name: tsa
     properties:
-      log_level: debug
-      host_key: ((tsa_host_key))
-      token_signing_key: ((token_signing_key))
-      authorized_keys: [((worker_key.public_key))]
+      log_level: "debug"
+      host_key: "((tsa_host_key))"
+      token_signing_key: "((token_signing_key))"
+      authorized_keys: ["((worker_key.public_key))"]
 
 - name: db
   instances: 1
@@ -70,12 +70,12 @@ instance_groups:
     name: groundcrew
     consumes: {baggageclaim: {from: worker-baggageclaim}}
     properties:
-      drain_timeout: 10m
-      tsa: {worker_key: ((worker_key))}
+      drain_timeout: "10m"
+      tsa: "{worker_key: ((worker_key))}"
 
   - release: concourse
     name: baggageclaim
-    properties: {log_level: debug}
+    properties: {log_level: "debug"}
     provides: {baggageclaim: {as: worker-baggageclaim}}
 
   - release: garden-runc
