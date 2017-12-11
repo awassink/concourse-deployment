@@ -36,8 +36,6 @@ instance_groups:
 - name: web
   instances: 1
   vm_type: default
-  vm_extensions:
-  - lb
   stemcell: default
   azs: [z1]
   networks: [{name: private}]
