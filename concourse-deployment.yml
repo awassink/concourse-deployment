@@ -1,90 +1,85 @@
 ---
-name: concourse
+name: ((deployment_name))
 
 releases:
 - name: concourse
-  version: 3.6.0
-  url: https://bosh.io/d/github.com/concourse/concourse?v=3.6.0
-  sha1: 1257bdcd3181ab0a669bc9e34cd87aff584f007b
+  version: ((concourse_version))
+  sha1: ((concourse_sha1))
+  url: https://bosh.io/d/github.com/concourse/concourse?v=((concourse_version))
 - name: garden-runc
-  version: 1.10.0
-  url: https://bosh.io/d/github.com/cloudfoundry/garden-runc-release?v=1.10.0
-  sha1: 9c2ad4a961db49a5349a26d4240b8f8b9b54af88
-
-stemcells:
-- alias: default
-  os: ubuntu-trusty
-  version: latest
+  version: ((garden_runc_version))
+  sha1: ((garden_runc_sha1))
+  url: https://bosh.io/d/github.com/cloudfoundry/garden-runc-release?v=((garden_runc_version))
+- name: postgres
+  version: ((postgres_version))
+  sha1: ((postgres_sha1))
+  url: https://bosh.io/d/github.com/cloudfoundry/postgres-release?v=((postgres_version))
 
 instance_groups:
+- name: web
+  instances: 1
+  azs: [z1]
+  networks: [{name: private}]
+  stemcell: trusty
+  vm_type: default
+  vm_extensions:
+  - lb
+  jobs:
+  - release: concourse
+    name: atc
+    properties:
+      external_url: "((external_url))"
+      basic_auth_username: "((basic_auth_username))"
+      basic_auth_password: "((basic_auth_password))"
+      postgresql_database: "((database_name))"
+      bind_port: 80
+  - release: concourse
+    name: tsa
+    properties: {}
+
 - name: db
   instances: 1
-  vm_type: default
-  stemcell: default
   persistent_disk_type: 1GB
   azs: [z1]
   networks: [{name: private}]
+  stemcell: trusty
+  vm_type: default
   jobs:
-  - name: postgresql
-    release: concourse
+  - release: postgres
+    name: postgres
     properties:
       databases:
       - name: "((database_name))"
         role: "((database_username))"
         password: "((database_password))"
 
-- name: web
-  instances: 1
-  vm_type: default
-  vm_extensions:
-  - lb
-  stemcell: default
+- name: worker
+  instances: 3
   azs: [z1]
   networks: [{name: private}]
-  jobs:
-  - name: atc
-    release: concourse
-    properties:
-      external_url: "https://((system_domain))"
-      basic_auth_username: "((basic_auth_username))"
-      basic_auth_password: "((basic_auth_password))"
-      postgresql_database: "((database_name))"
-      tls_cert: "((atc.certificate))"
-      tls_key: "((atc.private_key))"
-      tls_bind_port: 443
-      bind_port: 80
-  - name: tsa
-    release: concourse
-    properties: {}
-
-- name: worker
-  instances: 2
+  stemcell: trusty
   vm_type: default
   vm_extensions:
   - 100GB_ephemeral_disk
-  stemcell: default
-  azs: [z1]
-  networks: [{name: private}]
   jobs:
-  - name: groundcrew
-    release: concourse
-    properties: {}
-  - name: baggageclaim
-    release: concourse
-    properties: {}
-  - name: garden
-    release: garden-runc
+  - release: concourse
+    name: groundcrew
+    consumes: {baggageclaim: {from: worker-baggageclaim}}
+    properties:
+      drain_timeout: 10m
+      tsa: {worker_key: ((worker_key))}
+
+  - release: concourse
+    name: baggageclaim
+    properties: {log_level: debug}
+    provides: {baggageclaim: {as: worker-baggageclaim}}
+
+  - release: garden-runc
+    name: garden
     properties:
       garden:
         listen_network: tcp
         listen_address: 0.0.0.0:7777
-
-update:
-  canaries: 1
-  max_in_flight: 1
-  serial: true
-  canary_watch_time: 1000-60000
-  update_watch_time: 1000-90000
 
 variables:
 - name: basic_auth_username
@@ -97,12 +92,15 @@ variables:
   type: password
 - name: database_password
   type: password
-- name: atc_ca
-  type: certificate
-  options:
-    is_ca: true
-    common_name: atcCA
-- name: atc
-  type: certificate
-  options:
-    ca: atc_ca
+
+stemcells:
+- alias: trusty
+  os: ubuntu-trusty
+  version: latest
+
+update:
+  canaries: 1
+  max_in_flight: 1
+  serial: true
+  canary_watch_time: 1000-60000
+  update_watch_time: 1000-90000
