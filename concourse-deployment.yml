@@ -1,5 +1,5 @@
 ---
-name: ((deployment_name))
+name: concourse
 
 releases:
 - name: concourse
